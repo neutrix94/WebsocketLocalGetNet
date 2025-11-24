@@ -104,7 +104,7 @@ function setUp(server) {
           if (jsonMsg.type === events.ACTUAL_TRANSACTION) {
             ws.viewedTransactions = [
               ...ws.viewedTransactions,
-              ws.actualTransaction.traceability.folio_unico_transaccion,
+              ws.actualTransaction.TrxReference,/*traceability.folio_unico_transaccion*/
             ];
             clientHandlers.updateViewedTransactions(ws);
           }
