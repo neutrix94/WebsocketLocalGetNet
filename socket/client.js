@@ -110,8 +110,8 @@ function connectWebSocketClient(wss) {
       config.LOGGER.ws_cli(`Received actual transaction: ${jsonMsg.type}`);
       handlers.sendAcknowledgment(ws, jsonMsg.type);
       if (wss.readyState === wss.OPEN) {
-        const userId = jsonMsg.transaction.traceability.id_cajero;
-        const folio = jsonMsg.transaction.traceability.folio_unico_transaccion;
+        const userId = jsonMsg.transaction.TrxUser;//traceability.id_cajero
+        const folio = jsonMsg.transaction.TrxReference;//traceability.folio_unico_transaccion
         config.LOGGER.ws_cli(`Actual transaction data: Client - ${userId}, Folio - ${folio}`);
         let clientWs = null;
         wss.clients.forEach((client) => {

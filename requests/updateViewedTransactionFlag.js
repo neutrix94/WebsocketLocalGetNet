@@ -3,6 +3,8 @@ const axios = require('axios');
 const config = require('../config');
 
 const updateViewedTransactionFlag = (transactions, token) => {
+  console.log(`Entra en updateViewedTransactionFlag.`);
+  console.log(transactions);
   const payload = {
     registros: [],
   };

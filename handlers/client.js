@@ -12,8 +12,9 @@ const getTransactionList = (ws) => {
         const transactions = [];
         data.transacciones.forEach((transaction) => {
           transactions.push({
-            message: transaction.message,
-            folio_unico: transaction.folio_unico,
+            message: (transaction.gt_TrxResult == 'APPROVED' ? "Transaccion exitosa" : transaction.gt_TrxDescription),
+            folio_unico: transaction.gt_folio_unico,
+            folio_venta : transaction.gt_folio_venta
           });
         });
         ws.send(JSON.stringify({
