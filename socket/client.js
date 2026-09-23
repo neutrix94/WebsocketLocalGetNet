@@ -11,23 +11,52 @@ const PING_TIMEOUT = 1000 * 5 + 1000 * 1;
 const RECONNECT_INTERVAL = 1000 * 10 + 1000 * 1;
 const PING_VALUE = 1;
 
-function connectWebSocketClient(wss) {
+// Estado compartido entre reintentos, para no depender de closures
+// sobre un socket viejo ni de variables globales.
+function createConnectionState() {
+  return {
+    ws: null,
+    reconnectTimer: null,
+    connecting: false,
+  };
+}
+
+function connectWebSocketClient(wss, state = createConnectionState()) {
+  // Evita abrir una segunda conexión si ya hay una en curso/activa.
+  if (state.connecting) {
+    return;
+  }
+  state.connecting = true;
+
+  const clearReconnectTimer = () => {
+    if (state.reconnectTimer) {
+      clearTimeout(state.reconnectTimer);
+      state.reconnectTimer = null;
+    }
+  };
+
+  const scheduleReconnect = () => {
+    // Si ya hay un reintento programado, no apilar otro.
+    if (state.reconnectTimer) {
+      return;
+    }
+    state.reconnectTimer = setTimeout(() => {
+      state.reconnectTimer = null;
+      connectWebSocketClient(wss, state);
+    }, RECONNECT_INTERVAL);
+  };
+
   const ws = new WebSocket(
     config.WEBSOCKET_CLIENT_URL + utils.encryptToken(config.SERVER_TOKEN),
   );
   ws.isProcessing = false;
-
-  const reconnectInterval = () => {
-    if (ws.readyState === ws.CLOSED) {
-      connectWebSocketClient(wss);
-    }
-  };
+  state.ws = ws;
 
   const ping = () => {
     if (!ws) {
       return;
     }
-  
+
     if (ws.pingTimeout) {
       clearTimeout(ws.pingTimeout);
       ws.pingTimeout = null;
@@ -35,10 +64,6 @@ function connectWebSocketClient(wss) {
 
     ws.pingTimeout = setTimeout(() => {
       ws.close();
-      global.reconnectInterval = setInterval(
-        reconnectInterval,
-        RECONNECT_INTERVAL,
-      );
     }, PING_TIMEOUT);
 
     const data = new Uint8Array(1);
@@ -60,13 +85,13 @@ function connectWebSocketClient(wss) {
   };
 
   ws.on('open', () => {
-    clearInterval(global.reconnectInterval);
-    global.reconnectInterval = null;
+    state.connecting = false;
+    clearReconnectTimer();
     config.LOGGER.ws_cli('Connection started with dedicated ws');
   });
 
-  ws.on('error', ( error ) => {
-    console.log( error );
+  ws.on('error', (error) => {
+    console.log(error);
     config.LOGGER.ws_cli('Error trying to connect to dedicated ws');
   });
 
@@ -89,18 +114,14 @@ function connectWebSocketClient(wss) {
     config.LOGGER.ws_cli(`Connection closed with dedicated ws, code ${code}`);
     console.log(reasonString);
 
+    state.connecting = false;
+
     if (ws.pingTimeout) {
       clearTimeout(ws.pingTimeout);
       ws.pingTimeout = null;
     }
 
-    if (!global.reconnectInterval) {
-      reconnectInterval();
-      global.reconnectInterval = setInterval(
-        reconnectInterval,
-        RECONNECT_INTERVAL,
-      );
-    }
+    scheduleReconnect();
   });
 
   ws.msgFunction = (jsonMsg) => {
@@ -134,4 +155,4 @@ function connectWebSocketClient(wss) {
   };
 }
 
-module.exports = connectWebSocketClient;
+module.exports = (wss) => connectWebSocketClient(wss);

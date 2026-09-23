@@ -45,20 +45,27 @@ function setUp(server) {
     const encryptedToken = req.url.substring(1);
     if (!encryptedToken) {
       destroySocket();
+      return;
     }
 
     const token = utils.decryptToken(encryptedToken);
     // Validate if user is already connected
+    let alreadyConnected = false;
     wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN
           && token === client.token){
-        destroySocket();
+        alreadyConnected = true;
       }
     });
+    if (alreadyConnected) {
+      destroySocket();
+      return;
+    }
 
     requests.verifyToken(token)
       .then((response) => {
         const { data } = response;
+        console.log("Respuesta en verifyToken : " + data);
         if ('status' in data && data.status === 200) {
           const userId = data.id_usuario;
           wss.handleUpgrade(req, socket, head, (ws) => {
@@ -69,7 +76,7 @@ function setUp(server) {
       })
       .catch((error) => {
         destroySocket();
-        config.LOGGER.api(`Respuesta del servicio: ${error}`);
+        config.LOGGER.api(`Respuesta del servicio (desde local): ${error}`);
         config.LOGGER.api(`Invalid token ${token}`);
       });
   });
