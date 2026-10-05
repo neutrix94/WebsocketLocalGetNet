@@ -6,6 +6,7 @@ const GET_TRANSACTION_STATUS = 'get_transaction_status';
 // const SEND_TRANSACTION_STATUS = 'send_transaction_status';
 const INFORM_USERS = 'inform_users';
 const INFORM_FOLIO = 'inform_folio';
+const DUPLICATE_SESSION = 'duplicate_session';
 
 module.exports = {
   INFORM_TRANSACTIONS,
@@ -16,4 +17,5 @@ module.exports = {
   // SEND_TRANSACTION_STATUS,
   INFORM_USERS,
   INFORM_FOLIO,
+  DUPLICATE_SESSION,
 };
